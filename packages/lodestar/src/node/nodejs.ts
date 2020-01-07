@@ -16,7 +16,7 @@ import {OpPool} from "../opPool";
 import {ILogger} from "../logger";
 import {BeaconMetrics, HttpMetricsServer} from "../metrics";
 import {ApiService} from "../api";
-import {ReputationStore} from "../sync/IReputation";
+import {ReputationStore} from "../sync/reputation";
 import {TasksService} from "../tasks";
 import {initBLS} from "@chainsafe/bls";
 

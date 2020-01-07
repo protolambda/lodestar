@@ -5,7 +5,7 @@ import {BeaconChain} from "../../../../src/chain";
 import {WinstonLogger} from "../../../../src/logger";
 import {config} from "@chainsafe/eth2.0-config/src/presets/minimal";
 import {Libp2pNetwork} from "../../../../src/network";
-import {IReputation, ReputationStore} from "../../../../src/sync/IReputation";
+import {IReputation, ReputationStore} from "../../../../src/sync/reputation";
 import {ISyncOptions} from "../../../../src/sync/options";
 import {expect} from "chai";
 import * as syncUtils from "../../../../src/sync/utils/sync";

@@ -1,12 +1,15 @@
-import {IReputation, ReputationStore} from "../IReputation";
-import {BeaconBlock, BeaconBlockHeader, Checkpoint, Epoch, Slot} from "@chainsafe/eth2.0-types";
+import {IReputation, ReputationStore} from "../reputation";
+import {BeaconBlock, Checkpoint, Epoch, Slot} from "@chainsafe/eth2.0-types";
 import {IBeaconConfig} from "@chainsafe/eth2.0-config";
 import {signingRoot} from "@chainsafe/ssz";
 import {IReqResp} from "../../network";
+import {intDiv, toHex} from "@chainsafe/eth2.0-utils";
 
-export function isValidChainOfBlocks(config: IBeaconConfig, start: BeaconBlockHeader, blocks: BeaconBlock[]): boolean {
-  let parentRoot = signingRoot(config.types.BeaconBlockHeader, start);
+export function isValidChainOfBlocks(config: IBeaconConfig, start: BeaconBlock, blocks: BeaconBlock[]): boolean {
+  let parentRoot = signingRoot(config.types.BeaconBlock, start);
   for(const block of blocks) {
+    console.log("parent", toHex(parentRoot));
+    console.log("current block parent", toHex(block.parentRoot));
     if(!parentRoot.equals(block.parentRoot)) {
       return false;
     }
@@ -15,7 +18,7 @@ export function isValidChainOfBlocks(config: IBeaconConfig, start: BeaconBlockHe
   return true;
 }
 
-export function getSyncTargetEpoch(peers: IReputation[], currentCheckPoint: Checkpoint): Epoch {
+export function getFastSyncTargetEpoch(peers: IReputation[], currentCheckPoint: Checkpoint): Epoch {
   const numberOfEpochToBatch = 1;
   const peersWithHigherFinalizedEpoch = peers.filter(peer => {
     if(!peer.latestHello) {
@@ -31,12 +34,30 @@ export function getSyncTargetEpoch(peers: IReputation[], currentCheckPoint: Chec
   return currentCheckPoint.epoch;
 }
 
+export function getHighestCommonSlot(peers: IReputation[]): Slot {
+  const slotStatuses = peers.reduce<Map<Slot, number>>((current, peer) => {
+    if(peer.latestHello && current.has(peer.latestHello.headSlot)) {
+      current.set(peer.latestHello.headSlot + 1, current.get(peer.latestHello.headSlot) + 1);
+    } else if(peer.latestHello) {
+      current.set(peer.latestHello.headSlot + 1, 1);
+    }
+    return current;
+  }, new Map<Slot, number>());
+  return [...slotStatuses.entries()].sort((a, b) => {
+    return a[1] - b[1];
+  })[0][0];
+}
+
+export function isSynced(slot: Slot, peers: IReputation[]): boolean {
+  return slot >= getHighestCommonSlot(peers);
+}
+
 export function isValidFinalizedCheckPoint(peers: IReputation[], finalizedCheckPoint: Checkpoint): boolean {
   const validPeers = peers.filter((peer) => !!peer.latestHello);
   const peerCount = validPeers.filter(peer => {
     return peer.latestHello.finalizedRoot.equals(finalizedCheckPoint.root);
   }).length;
-  return peerCount >= (validPeers.length / 2);
+  return peerCount >= intDiv(validPeers.length, 2);
 }
 
 export interface ISlotRange {

@@ -121,7 +121,7 @@ export class DevCommand implements ICliCommand {
 
     let peerId;
     if (options["peerId"]) {
-      peerId = PeerId.createFromHexString(options["peerId"]);
+      peerId = PeerId.createFromB58String(options["peerId"]);
     } else if (options["peerIdFile"]) {
       peerId = loadPeerId(options["peerId"]);
     } else {
@@ -134,7 +134,7 @@ export class DevCommand implements ICliCommand {
     if (options.genesisState) {
       state = quickStartOptionToState(config, tree, options.genesisState);
     } else if (options.genesisTime && options.validatorCount) {
-      logger.info(`Starting node with genesisTime ${new Date(parseInt(options.genesisTime)*1000)} and \
+      logger.info(`Starting node with genesisTime ${parseInt(options.genesisTime)} and \
        ${options.validatorCount} validators.`);
       state = quickStartState(config, tree, parseInt(options.genesisTime), parseInt(options.validatorCount));
     } else {
@@ -142,12 +142,6 @@ export class DevCommand implements ICliCommand {
     }
     this.node = new BeaconNode(conf, {config, logger, eth1: new InteropEth1Notifier(), libp2p});
     await this.node.chain.initializeBeaconChain(state, tree);
-
-    const targetSlot = computeStartSlotOfEpoch(
-      config,
-      computeEpochOfSlot(config, getCurrentSlot(config, state.genesisTime))
-    );
-    await this.node.chain.advanceState(targetSlot);
     rimraf.sync(dbConfig.name);
     await this.node.start();
     if(options.validators) {

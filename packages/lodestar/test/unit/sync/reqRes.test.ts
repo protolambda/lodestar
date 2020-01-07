@@ -13,7 +13,7 @@ import {generateState} from "../../utils/state";
 import {SyncReqResp} from "../../../src/sync/reqResp";
 import {BlockRepository, ChainRepository, StateRepository} from "../../../src/db/api/beacon/repositories";
 import {ReqResp} from "../../../src/network/reqResp";
-import {ReputationStore} from "../../../src/sync/IReputation";
+import {ReputationStore} from "../../../src/sync/reputation";
 
 describe("syncing", function () {
   let sandbox = sinon.createSandbox();

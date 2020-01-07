@@ -1,7 +1,7 @@
 import {beforeEach, afterEach, describe, it} from "mocha";
 import {ReqResp} from "../../../../src/network/reqResp";
 import sinon from "sinon";
-import {ReputationStore} from "../../../../src/sync/IReputation";
+import {ReputationStore} from "../../../../src/sync/reputation";
 import * as syncUtils from "../../../../src/sync/utils/sync";
 import {getBlockRange} from "../../../../src/sync/utils/blocks";
 // @ts-ignore

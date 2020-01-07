@@ -17,7 +17,7 @@ import {IBeaconChain} from "../../chain";
 import {INetwork} from "../../network";
 import {ILogger} from "../../logger";
 import {ISyncOptions, ISyncReqResp} from "./interface";
-import {ReputationStore} from "../IReputation";
+import {ReputationStore} from "../reputation";
 
 export interface ISyncReqRespModules {
   config: IBeaconConfig;
@@ -111,8 +111,31 @@ export class SyncReqResp implements ISyncReqResp {
   ): Promise<void> {
     try {
       const response: BeaconBlocksByRangeResponse = [];
-      const blocks = await this.db.blockArchive.getAllBetween(request.startSlot - 1, request.startSlot + request.count);
-      response.push(...blocks);
+      const [headBlock, finalizedBlock]  = await Promise.all([
+        this.db.block.get(request.headBlockRoot),
+        this.db.block.getFinalizedBlock()
+      ]);
+      if(request.startSlot >= finalizedBlock.slot) {
+        let count = 0;
+        for(let slot = request.startSlot; count <= request.count && slot <= headBlock.slot; slot += request.step) {
+          response.push(await this.db.block.getBlockBySlot(slot));
+          count++;
+        }
+      } else {
+        const blocks = await this.db.blockArchive.getAllBetween(
+          request.startSlot - 1,
+          request.startSlot + request.count
+        );
+        response.push(...blocks);
+        let count = response.length;
+        for(
+          let slot = request.startSlot + request.count;
+          count <= request.count && slot <= headBlock.slot;
+          slot += request.step) {
+          response.push(await this.db.block.getBlockBySlot(slot));
+          count++;
+        }
+      }
       this.network.reqResp.sendResponse(id, null, response);
     } catch (e) {
       this.network.reqResp.sendResponse(id, e, null);

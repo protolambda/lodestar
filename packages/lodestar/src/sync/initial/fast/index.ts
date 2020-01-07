@@ -3,38 +3,41 @@
  */
 import {IBeaconConfig} from "@chainsafe/eth2.0-config";
 import {IBeaconChain} from "../../../chain";
-import {ReputationStore} from "../../IReputation";
-import {IReqResp} from "../../../network";
+import {ReputationStore} from "../../reputation";
+import {INetwork, IReqResp} from "../../../network";
 import {ILogger} from "../../../logger";
 import {ISyncOptions} from "../../options";
 import {IInitialSyncModules, InitialSync, InitialSyncEventEmitter} from "../interface";
 import {EventEmitter} from "events";
-import {getSyncTargetEpoch, isValidChainOfBlocks, isValidFinalizedCheckPoint} from "../../utils/sync";
+import {getFastSyncTargetEpoch, isValidChainOfBlocks, isValidFinalizedCheckPoint} from "../../utils/sync";
 import {BeaconState, Checkpoint} from "@chainsafe/eth2.0-types";
 import {computeStartSlotOfEpoch} from "@chainsafe/eth2.0-state-transition";
 import {getBlockRange} from "../../utils/blocks";
+import {IBeaconDb} from "../../../db/api";
 
 export class FastSync
   extends (EventEmitter as { new(): InitialSyncEventEmitter })
   implements InitialSync {
 
-  private config: IBeaconConfig;
-  private opts: ISyncOptions;
-  private chain: IBeaconChain;
-  private reps: ReputationStore;
-  private rpc: IReqResp;
-  private logger: ILogger;
-  private peers: PeerInfo[];
+  private readonly config: IBeaconConfig;
+  private readonly opts: ISyncOptions;
+  private readonly chain: IBeaconChain;
+  private readonly db: IBeaconDb;
+  private readonly reps: ReputationStore;
+  private readonly network: INetwork;
+  private readonly logger: ILogger;
+  private readonly peers: PeerInfo[];
 
-  public constructor(opts: ISyncOptions, {config, chain, network, reps, logger, peers}: IInitialSyncModules) {
+  public constructor(opts: ISyncOptions, modules: IInitialSyncModules) {
     super();
-    this.config = config;
-    this.chain = chain;
-    this.peers = peers;
-    this.reps = reps;
+    this.config = modules.config;
+    this.chain = modules.chain;
+    this.db = modules.db;
+    this.peers = modules.peers;
+    this.reps = modules.reps;
     this.opts = opts;
-    this.rpc = network.reqResp;
-    this.logger = logger;
+    this.network = modules.network;
+    this.logger = modules.logger;
   }
 
   public async start(): Promise<void> {
@@ -62,26 +65,28 @@ export class FastSync
   }
 
   private sync = async (chainCheckPoint: Checkpoint): Promise<void> => {
-    const peers = Array.from(this.peers).map(this.reps.getFromPeerInfo);
-    const targetEpoch = getSyncTargetEpoch(peers, chainCheckPoint);
+    const peers = Array.from(this.peers).map((peer) => this.reps.getFromPeerInfo(peer));
+    const targetEpoch = getFastSyncTargetEpoch(peers, chainCheckPoint);
+    this.logger.info(`Current epoch ${chainCheckPoint.epoch}. Syncing up to epoch ${targetEpoch}`);
     if(chainCheckPoint.epoch >= targetEpoch) {
       if(isValidFinalizedCheckPoint(peers, chainCheckPoint)) {
         this.logger.info("Chain already on latest finalized state");
         this.chain.removeListener("processedCheckpoint", this.sync);
         this.emit("sync:completed", chainCheckPoint);
+        return;
       }
       this.logger.error("Wrong chain synced, should clean and start over");
     } else {
-      this.logger.debug(`Fast syncing to target ${targetEpoch}`);
+      this.logger.info(`Fast syncing to target epoch ${targetEpoch}`);
       const latestState = this.chain.latestState as BeaconState;
       const blocks = await getBlockRange(
-        this.rpc,
+        this.network.reqResp,
         this.reps,
         this.peers,
-        {start: latestState.slot, end: computeStartSlotOfEpoch(this.config, targetEpoch)},
+        {start: latestState.slot, end: computeStartSlotOfEpoch(this.config, targetEpoch) + 1},
         this.opts.blockPerChunk
       );
-      if(isValidChainOfBlocks(this.config, latestState.latestBlockHeader, blocks)) {
+      if(isValidChainOfBlocks(this.config, await this.db.block.getBlockBySlot(latestState.slot), blocks)) {
         blocks.forEach((block) => this.chain.receiveBlock(block, true));
         this.emit("sync:checkpoint", targetEpoch);
       } else {

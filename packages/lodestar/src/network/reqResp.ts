@@ -224,6 +224,7 @@ export class ReqResp extends (EventEmitter as IReqRespEventEmitterClass) impleme
       length !== data.length - (bytes + 1) ||
       length > REQ_RESP_MAX_SIZE
     ) {
+      console.log("invalid request", length, data.length - (bytes + 1));
       throw new Error(ERR_INVALID_REQ);
     }
     data = data.slice(bytes + 1);

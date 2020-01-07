@@ -1,6 +1,6 @@
 import sinon from "sinon";
 import {expect} from  "chai";
-import {IReputation, ReputationStore} from "../../../src/sync/IReputation";
+import {IReputation, ReputationStore} from "../../../src/sync/reputation";
 
 
 describe("syncing", function () {

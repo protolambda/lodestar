@@ -25,16 +25,11 @@ interface ILibp2pModules {
 
 
 export class Libp2pNetwork extends (EventEmitter as { new(): NetworkEventEmitter }) implements INetwork {
-  // @ts-ignore
   public peerInfo: PeerInfo;
-  // @ts-ignore
   public reqResp: ReqResp;
-  // @ts-ignore
   public gossip: Gossip;
-
   private opts: INetworkOptions;
   private config: IBeaconConfig;
-  // @ts-ignore
   private libp2p: LibP2p;
   private inited: Promise<void>;
   private logger: ILogger;
@@ -47,14 +42,12 @@ export class Libp2pNetwork extends (EventEmitter as { new(): NetworkEventEmitter
     this.logger = logger;
     this.metrics = metrics;
     // `libp2p` can be a promise as well as a libp2p object
+    const init = this.init;
     this.inited = new Promise((resolve) => {
       Promise.resolve(libp2p).then((libp2p) => {
-        this.peerInfo = libp2p.peerInfo;
-        this.libp2p = libp2p;
-        this.reqResp = new ReqResp(opts, {config, libp2p, logger});
-        this.gossip = new Gossip(opts, {config, libp2p, logger}); 
+        init(libp2p);
         resolve();
-      });
+      } );
     });
   }
 
@@ -92,11 +85,20 @@ export class Libp2pNetwork extends (EventEmitter as { new(): NetworkEventEmitter
   public async disconnect(peerInfo: PeerInfo): Promise<void> {
     await promisify<void, PeerInfo>(this.libp2p.hangUp.bind(this.libp2p))(peerInfo);
   }
+
+  private init = (libp2p: LibP2p): void => {
+    this.peerInfo = libp2p.peerInfo;
+    this.libp2p = libp2p;
+    this.reqResp = new ReqResp(this.opts, {config: this.config, libp2p, logger: this.logger});
+    this.gossip = new Gossip(this.opts, {config: this.config, libp2p, logger: this.logger});
+  };
+
   private emitPeerConnect = (peerInfo: PeerInfo): void => {
     this.logger.verbose("peer connected " + peerInfo.id.toB58String());
     this.metrics.peers.inc();
     this.emit("peer:connect", peerInfo);
   };
+
   private emitPeerDisconnect = (peerInfo: PeerInfo): void => {
     this.logger.verbose("peer disconnected " + peerInfo.id.toB58String());
     this.metrics.peers.dec();
