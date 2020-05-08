@@ -9,7 +9,12 @@ export class RoundRobinArray<T> {
   }
 
   public next(): T {
-    return this.array[this.index++];
+    const res = this.array[this.index];
+    this.index += 1;
+    if (this.index >= this.array.length) {
+      this.index = 0;
+    }
+    return res;
   }
 
   private shuffle(array: T[]): T[] {

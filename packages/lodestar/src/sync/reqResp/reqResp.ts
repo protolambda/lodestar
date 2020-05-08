@@ -103,6 +103,9 @@ export class BeaconReqRespHandler implements IReqRespHandler {
   };
 
   public async onStatus(peerInfo: PeerInfo, id: RequestId, request: Status): Promise<void> {
+    this.logger.info("status request inbound with head slot "+
+        `${request.headSlot} block root ${toHexString(request.headRoot)}`);
+    this.logger.info(`status request inbound has fork digest ${toHexString(request.forkDigest)}`);
     if (await this.shouldDisconnectOnStatus(request)) {
       await this.network.reqResp.goodbye(peerInfo, BigInt(GoodByeReasonCode.IRRELEVANT_NETWORK));
     }
@@ -217,6 +220,8 @@ export class BeaconReqRespHandler implements IReqRespHandler {
     const headHeader = this.config.types.BeaconBlockHeader.clone(state.latestBlockHeader);
     headHeader.stateRoot = this.config.types.BeaconState.hashTreeRoot(state);
     const headBlockRoot = this.config.types.BeaconBlockHeader.hashTreeRoot(headHeader);
+    this.logger.info(`status request outbound with head slot ${state.slot} block root ${toHexString(headBlockRoot)}`);
+    this.logger.info(`status request outbound has fork digest ${toHexString(this.chain.currentForkDigest)}`);
     return {
       forkDigest: this.chain.currentForkDigest,
       finalizedRoot: finalizedCheckpoint.root,
