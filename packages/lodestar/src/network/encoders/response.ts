@@ -1,7 +1,7 @@
 import {IResponseChunk} from "./interface";
 import {IBeaconConfig} from "@chainsafe/lodestar-config";
 import {ILogger} from "@chainsafe/lodestar-utils/lib/logger";
-import {Method, MethodResponseType, Methods, ReqRespEncoding, RpcResponseStatus} from "../../constants";
+import {Method, MethodResponseType, Methods, ReqRespEncoding, RequestId, RpcResponseStatus} from "../../constants";
 import {decode, encode} from "varint";
 import {encodeResponseStatus, getCompressor, getDecompressor, maxEncodedLen} from "./utils";
 import BufferList from "bl";
@@ -47,7 +47,7 @@ export function eth2ResponseEncode(
 }
 
 export function eth2ResponseDecode(
-  config: IBeaconConfig, logger: ILogger, method: Method, encoding: ReqRespEncoding
+  config: IBeaconConfig, logger: ILogger, method: Method, encoding: ReqRespEncoding, requestId: RequestId
 ): (source: AsyncIterable<Buffer>) => AsyncGenerator<ResponseBody> {
   return (source) => {
     return (async function*() {
@@ -65,6 +65,10 @@ export function eth2ResponseDecode(
         if(status === null) {
           status = buffer.get(0);
           buffer.consume(1);
+          if(status !== RpcResponseStatus.SUCCESS) {
+            logger.warn(`Received err status ${status} for method ${method}`, {requestId, encoding});
+            break;
+          }
         }
         if(buffer.length === 0) continue;
         if(status && status !== RpcResponseStatus.SUCCESS) {
@@ -98,12 +102,13 @@ export function eth2ResponseDecode(
           uncompressed = decompressor.uncompress(buffer.slice());
           buffer.consume(buffer.length);
         } catch (e) {
-          logger.warn(`Failed to uncompress data for method ${method}. Error: ${e.message}`);
+          logger.warn(`Failed to uncompress data for method ${method}. Error: ${e.message}`, {requestId, encoding});
         }
         if(uncompressed) {
           uncompressedData.append(uncompressed);
           if(uncompressedData.length > sszLength) {
-            throw new Error(`Received too much data for method ${method}`);
+            logger.warn(`Received too much data for method ${method}`, {requestId, encoding});
+            break;
           }
           if(uncompressedData.length === sszLength) {
             try {
@@ -117,7 +122,10 @@ export function eth2ResponseDecode(
                 break;
               }
             } catch (e) {
-              logger.warn(`Failed to ssz deserialize data for method ${method}. Error: ${e.message}`);
+              logger.warn(
+                `Failed to ssz deserialize data for method ${method}. Error: ${e.message}`,
+                {requestId, encoding}
+              );
             }
           }
         }

@@ -1,5 +1,7 @@
 import pipe from "it-pipe";
-import {eth2ResponseDecode, eth2ResponseEncode, encodeP2pErrorMessage, decodeP2pErrorMessage} from "../../../../src/network/encoders/response";
+import {eth2ResponseDecode, eth2ResponseEncode,
+  encodeP2pErrorMessage, decodeP2pErrorMessage} from "../../../../src/network/encoders/response";
+import {randomRequestId} from "../../../../src/network";
 import {config} from "@chainsafe/lodestar-config/lib/presets/minimal";
 import sinon, {SinonStubbedInstance} from "sinon";
 import {ILogger, WinstonLogger} from "@chainsafe/lodestar-utils/lib/logger";
@@ -25,7 +27,7 @@ describe("response decoders", function () {
     const responses = await pipe(
       [],
       eth2ResponseEncode(config, loggerStub, Method.Goodbye, ReqRespEncoding.SSZ),
-      eth2ResponseDecode(config, loggerStub, Method.Goodbye, ReqRespEncoding.SSZ),
+      eth2ResponseDecode(config, loggerStub, Method.Goodbye, ReqRespEncoding.SSZ, "abc"),
       collect
     );
     expect(responses.length).to.be.equal(0);
@@ -35,7 +37,7 @@ describe("response decoders", function () {
     const responses = await pipe(
       [],
       eth2ResponseEncode(config, loggerStub, Method.Goodbye, ReqRespEncoding.SSZ_SNAPPY),
-      eth2ResponseDecode(config, loggerStub, Method.Goodbye, ReqRespEncoding.SSZ_SNAPPY),
+      eth2ResponseDecode(config, loggerStub, Method.Goodbye, ReqRespEncoding.SSZ_SNAPPY, "abc"),
       collect
     );
     expect(responses.length).to.be.equal(0);
@@ -45,7 +47,7 @@ describe("response decoders", function () {
     const responses = await pipe(
       [{status: 1}],
       eth2ResponseEncode(config, loggerStub, Method.Goodbye, ReqRespEncoding.SSZ),
-      eth2ResponseDecode(config, loggerStub, Method.Goodbye, ReqRespEncoding.SSZ),
+      eth2ResponseDecode(config, loggerStub, Method.Goodbye, ReqRespEncoding.SSZ, "abc"),
       collect
     );
     expect(responses.length).to.be.equal(0);
@@ -55,7 +57,7 @@ describe("response decoders", function () {
     const responses = await pipe(
       [{status: 1}],
       eth2ResponseEncode(config, loggerStub, Method.Goodbye, ReqRespEncoding.SSZ_SNAPPY),
-      eth2ResponseDecode(config, loggerStub, Method.Goodbye, ReqRespEncoding.SSZ_SNAPPY),
+      eth2ResponseDecode(config, loggerStub, Method.Goodbye, ReqRespEncoding.SSZ_SNAPPY, "abc"),
       collect
     );
     expect(responses.length).to.be.equal(0);
@@ -65,7 +67,7 @@ describe("response decoders", function () {
     const responses = await pipe(
       [{status: 0, body: 1n}],
       eth2ResponseEncode(config, loggerStub, Method.Ping, ReqRespEncoding.SSZ),
-      eth2ResponseDecode(config, loggerStub, Method.Ping, ReqRespEncoding.SSZ),
+      eth2ResponseDecode(config, loggerStub, Method.Ping, ReqRespEncoding.SSZ, "abc"),
       collect
     );
     expect(responses.length).to.be.equal(1);
@@ -76,7 +78,7 @@ describe("response decoders", function () {
     const responses = await pipe(
       [{status: 0, body: 1n}],
       eth2ResponseEncode(config, loggerStub, Method.Ping, ReqRespEncoding.SSZ_SNAPPY),
-      eth2ResponseDecode(config, loggerStub, Method.Ping, ReqRespEncoding.SSZ_SNAPPY),
+      eth2ResponseDecode(config, loggerStub, Method.Ping, ReqRespEncoding.SSZ_SNAPPY, "abc"),
       collect
     );
     expect(responses.length).to.be.equal(1);
@@ -87,7 +89,7 @@ describe("response decoders", function () {
     const responses = await pipe(
       [{status: 0, body: 1n}, {status: 0, body: 1n}],
       eth2ResponseEncode(config, loggerStub, Method.Ping, ReqRespEncoding.SSZ),
-      eth2ResponseDecode(config, loggerStub, Method.Ping, ReqRespEncoding.SSZ),
+      eth2ResponseDecode(config, loggerStub, Method.Ping, ReqRespEncoding.SSZ, "abc"),
       collect
     );
     expect(responses.length).to.be.equal(1);
@@ -98,7 +100,7 @@ describe("response decoders", function () {
     const responses = await pipe(
       [{status: 0, body: 1n}, {status: 0, body: 1n}],
       eth2ResponseEncode(config, loggerStub, Method.Ping, ReqRespEncoding.SSZ_SNAPPY),
-      eth2ResponseDecode(config, loggerStub, Method.Ping, ReqRespEncoding.SSZ_SNAPPY),
+      eth2ResponseDecode(config, loggerStub, Method.Ping, ReqRespEncoding.SSZ_SNAPPY, "abc"),
       collect
     );
     expect(responses.length).to.be.equal(1);
@@ -110,7 +112,7 @@ describe("response decoders", function () {
     const responses = await pipe(
       [{status: 0, body: status}],
       eth2ResponseEncode(config, loggerStub, Method.Status, ReqRespEncoding.SSZ),
-      eth2ResponseDecode(config, loggerStub, Method.Status, ReqRespEncoding.SSZ),
+      eth2ResponseDecode(config, loggerStub, Method.Status, ReqRespEncoding.SSZ, "abc"),
       collect
     );
     expect(responses.length).to.be.equal(1);
@@ -122,7 +124,7 @@ describe("response decoders", function () {
     const responses = await pipe(
       [{status: 0, body: status}],
       eth2ResponseEncode(config, loggerStub, Method.Status, ReqRespEncoding.SSZ_SNAPPY),
-      eth2ResponseDecode(config, loggerStub, Method.Status, ReqRespEncoding.SSZ_SNAPPY),
+      eth2ResponseDecode(config, loggerStub, Method.Status, ReqRespEncoding.SSZ_SNAPPY, "abc"),
       collect
     );
     expect(responses.length).to.be.equal(1);
@@ -134,7 +136,7 @@ describe("response decoders", function () {
     const responses = await pipe(
       chunks,
       eth2ResponseEncode(config, loggerStub, Method.BeaconBlocksByRange, ReqRespEncoding.SSZ),
-      eth2ResponseDecode(config, loggerStub, Method.BeaconBlocksByRange, ReqRespEncoding.SSZ),
+      eth2ResponseDecode(config, loggerStub, Method.BeaconBlocksByRange, ReqRespEncoding.SSZ, "abc"),
       collect
     ) as ResponseBody[];
     expect(responses.length).to.be.equal(10);
@@ -150,7 +152,7 @@ describe("response decoders", function () {
     const responses = await pipe(
       chunks,
       eth2ResponseEncode(config, loggerStub, Method.BeaconBlocksByRange, ReqRespEncoding.SSZ_SNAPPY),
-      eth2ResponseDecode(config, loggerStub, Method.BeaconBlocksByRange, ReqRespEncoding.SSZ_SNAPPY),
+      eth2ResponseDecode(config, loggerStub, Method.BeaconBlocksByRange, ReqRespEncoding.SSZ_SNAPPY, "abc"),
       collect
     ) as ResponseBody[];
     expect(responses.length).to.be.equal(10);
@@ -168,11 +170,12 @@ describe("response decoders", function () {
     const responses = await pipe(
       chunks,
       eth2ResponseEncode(config, loggerStub, Method.BeaconBlocksByRange, ReqRespEncoding.SSZ),
-      eth2ResponseDecode(config, loggerStub, Method.BeaconBlocksByRange, ReqRespEncoding.SSZ),
+      eth2ResponseDecode(config, loggerStub, Method.BeaconBlocksByRange, ReqRespEncoding.SSZ, "abc"),
       collect
     ) as ResponseBody[];
     expect(responses.length).to.be.equal(4);
-    expect(loggerStub.warn.calledWith("eth2ResponseDecode: Received err status '1' with message 'Invalid request' for method beacon_blocks_by_range")).to.be.true;
+    expect(loggerStub.warn.calledWith("eth2ResponseDecode: Received err status '1'" +
+      " with message 'Invalid request' for method beacon_blocks_by_range")).to.be.true;
   });
 
   it("should work - response stream with error - ssz_snappy", async function () {
@@ -181,7 +184,7 @@ describe("response decoders", function () {
     const responses = await pipe(
       chunks,
       eth2ResponseEncode(config, loggerStub, Method.BeaconBlocksByRange, ReqRespEncoding.SSZ_SNAPPY),
-      eth2ResponseDecode(config, loggerStub, Method.BeaconBlocksByRange, ReqRespEncoding.SSZ_SNAPPY),
+      eth2ResponseDecode(config, loggerStub, Method.BeaconBlocksByRange, ReqRespEncoding.SSZ_SNAPPY, "abc"),
       collect
     ) as ResponseBody[];
     expect(responses.length).to.be.equal(5);
@@ -192,12 +195,14 @@ describe("response decoders", function () {
       try {
         await pipe(
           [Buffer.concat([Buffer.alloc(1), Buffer.from(encode(99999999999999999999999))])],
-          eth2ResponseDecode(config, loggerStub, Method.BeaconBlocksByRange, ReqRespEncoding.SSZ_SNAPPY),
+          eth2ResponseDecode(config, loggerStub, Method.BeaconBlocksByRange,
+            ReqRespEncoding.SSZ_SNAPPY, randomRequestId()),
           collect
         );
         fail("expect error here");
       } catch (err) {
-        expect(err.message).to.be.equal("eth2ResponseDecode: Invalid number of bytes for protobuf varint 11, method beacon_blocks_by_range");
+        expect(err.message).to.be.equal(
+          "eth2ResponseDecode: Invalid number of bytes for protobuf varint 11, method beacon_blocks_by_range");
       }
     });
 
@@ -205,7 +210,7 @@ describe("response decoders", function () {
       try {
         await pipe(
           [Buffer.concat([Buffer.alloc(1), Buffer.alloc(12, 0)])],
-          eth2ResponseDecode(config, loggerStub, Method.Status, ReqRespEncoding.SSZ_SNAPPY),
+          eth2ResponseDecode(config, loggerStub, Method.Status, ReqRespEncoding.SSZ_SNAPPY, randomRequestId()),
           collect
         );
         fail("expect error here");
@@ -220,7 +225,7 @@ describe("response decoders", function () {
           [Buffer.concat([Buffer.alloc(1),
             Buffer.from(encode(config.types.Status.minSize())),
             Buffer.alloc(config.types.Status.minSize() + 10)])],
-          eth2ResponseDecode(config, loggerStub, Method.Status, ReqRespEncoding.SSZ),
+          eth2ResponseDecode(config, loggerStub, Method.Status, ReqRespEncoding.SSZ, randomRequestId()),
           collect
         );
         fail("expect error here");
@@ -235,7 +240,7 @@ describe("response decoders", function () {
           [Buffer.concat([Buffer.alloc(1),
             Buffer.from(encode(config.types.Status.minSize())),
             Buffer.alloc(config.types.Status.minSize())])],
-          eth2ResponseDecode(config, loggerStub, Method.Status, ReqRespEncoding.SSZ_SNAPPY),
+          eth2ResponseDecode(config, loggerStub, Method.Status, ReqRespEncoding.SSZ_SNAPPY, randomRequestId()),
           collect
         );
         fail("expect error here");
@@ -251,7 +256,7 @@ describe("response decoders", function () {
         [Buffer.concat([Buffer.alloc(1),
           Buffer.from(encode(config.types.Status.minSize())),
           config.types.Status.serialize(status)])],
-        eth2ResponseDecode(config, loggerStub, Method.Status, ReqRespEncoding.SSZ),
+        eth2ResponseDecode(config, loggerStub, Method.Status, ReqRespEncoding.SSZ, randomRequestId()),
         collect
       );
       expect(response).to.be.deep.equal([status]);

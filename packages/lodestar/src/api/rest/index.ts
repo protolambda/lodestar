@@ -5,10 +5,16 @@ import {IService} from "../../node";
 import {IRestApiOptions} from "./options";
 import {ILogger} from "@chainsafe/lodestar-utils/lib/logger";
 import * as routes from "./routes";
-import qs from "qs";
 import {ApiNamespace} from "../index";
 import {IRestApiModules} from "./interface";
 import {FastifySSEPlugin} from "fastify-sse-v2";
+import * as querystring from "querystring";
+import {FastifyLogger} from "./logger/fastify";
+import {errorHandler} from "./routes/error";
+import {IBeaconConfig} from "@chainsafe/lodestar-config";
+import {IValidatorApi} from "../impl/validator";
+import {IBeaconApi} from "../impl/beacon";
+import {registerRoutes} from "./routes";
 
 export class RestApi implements IService {
 
@@ -18,7 +24,7 @@ export class RestApi implements IService {
   private logger: ILogger;
 
   public constructor(
-    opts: IRestApiOptions, 
+    opts: IRestApiOptions,
     modules: IRestApiModules
   ) {
     this.opts = opts;
@@ -42,15 +48,19 @@ export class RestApi implements IService {
 
   private  setupServer(modules: IRestApiModules): FastifyInstance {
     const server = fastify.default({
-      //TODO: somehow pass winston here
-      logger: false,
-      querystringParser: qs.parse
+      logger: new FastifyLogger(this.logger),
+      ajv: {
+        customOptions: {
+          coerceTypes: "array",
+        }
+      },
+      querystringParser: querystring.parse
     });
-
+    server.setErrorHandler(errorHandler);
     if(this.opts.cors) {
-      const corsArr = this.opts.cors.split(",");
+      // const corsArr = this.opts.cors.split(",");
       server.register(fastifyCors, {
-        origin: corsArr
+        origin: "*",
       });
     }
     server.register(FastifySSEPlugin);
@@ -58,6 +68,15 @@ export class RestApi implements IService {
       beacon: modules.beacon,
       validator: modules.validator
     };
+    server.decorate("config", modules.config);
+    server.decorate("api", api);
+    //new api
+    server.register(async function (instance) {
+      registerRoutes(instance);
+    });
+
+
+    //old api, remove once migrated
     if(this.opts.api.includes(ApiNamespace.BEACON)) {
       server.register(routes.beacon, {prefix: "/node", api, config: modules.config});
     }
@@ -68,5 +87,18 @@ export class RestApi implements IService {
     }
 
     return server;
+  }
+}
+
+declare module "fastify" {
+
+  // eslint-disable-next-line @typescript-eslint/interface-name-prefix
+  interface FastifyInstance<HttpServer, HttpRequest, HttpResponse, Config = {}> {
+    //decorated properties on fastify server
+    config: IBeaconConfig;
+    api: {
+      beacon: IBeaconApi;
+      validator: IValidatorApi;
+    };
   }
 }

@@ -1,11 +1,19 @@
 import {IBeaconSSZTypes} from "../interface";
 import {ContainerType} from "@chainsafe/ssz";
 
+export const SignedBeaconHeaderResponse = (ssz: IBeaconSSZTypes): ContainerType => new ContainerType({
+  fields: {
+    root: ssz.Root,
+    canonical: ssz.Boolean,
+    header: ssz.SignedBeaconBlockHeader
+  },
+});
+
 export const SubscribeToCommitteeSubnetPayload = (ssz: IBeaconSSZTypes): ContainerType => new ContainerType({
   fields: {
     slot: ssz.Slot,
     slotSignature: ssz.BLSSignature,
-    committeeIndex: ssz.CommitteeIndex,
+    attestationCommitteeIndex: ssz.CommitteeIndex,
     aggregatorPubkey: ssz.BLSPubkey
   },
 });
