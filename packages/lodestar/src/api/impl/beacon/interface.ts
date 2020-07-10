@@ -10,10 +10,12 @@ import {
   Number64,
   SignedBeaconBlock,
   SyncingStatus,
-  ValidatorResponse
+  ValidatorResponse,
+  HeadResponse
 } from "@chainsafe/lodestar-types";
 import {LodestarEventIterator} from "../../../util/events";
 import {IBeaconBlocksApi} from "./blocks";
+import PeerId from "peer-id";
 
 export interface IBeaconApi extends IApi {
 
@@ -52,4 +54,14 @@ export interface IBeaconApi extends IApi {
   getSyncingStatus(): Promise<boolean | SyncingStatus>;
 
   getBlockStream(): LodestarEventIterator<SignedBeaconBlock>;
+
+  /**
+   * Requests the current fork-choice head, including finalization and justification data.
+   */
+  getHead(): Promise<HeadResponse>;
+
+  /**
+   * Requests list of currently connected peers.
+   */
+  getPeers(): Promise<PeerId[]>;
 }

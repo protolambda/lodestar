@@ -3,6 +3,7 @@
  */
 
 import {IBeaconConfig} from "@chainsafe/lodestar-config";
+import PeerId from "peer-id";
 import {
   BLSPubkey,
   Bytes32,
@@ -11,7 +12,8 @@ import {
   SignedBeaconBlock,
   SyncingStatus,
   Uint64,
-  ValidatorResponse
+  ValidatorResponse,
+  HeadResponse,
 } from "@chainsafe/lodestar-types";
 import {IBeaconApi} from "./interface";
 import {IBeaconChain} from "../../../chain";
@@ -20,6 +22,7 @@ import {IApiModules} from "../../interface";
 import {ApiNamespace} from "../../index";
 import {IBeaconDb} from "../../../db/api";
 import {IBeaconSync} from "../../../sync";
+import {INetwork} from "../../../network";
 import {BeaconBlockApi, IBeaconBlocksApi} from "./blocks";
 import {LodestarEventIterator} from "../../../util/events";
 
@@ -32,6 +35,7 @@ export class BeaconApi implements IBeaconApi {
   private readonly chain: IBeaconChain;
   private readonly db: IBeaconDb;
   private readonly sync: IBeaconSync;
+  private readonly network: INetwork;
 
   public constructor(opts: Partial<IApiOptions>, modules: IApiModules) {
     this.namespace = ApiNamespace.BEACON;
@@ -39,11 +43,12 @@ export class BeaconApi implements IBeaconApi {
     this.chain = modules.chain;
     this.db = modules.db;
     this.sync = modules.sync;
+    this.network = modules.network;
     this.blocks = new BeaconBlockApi(opts, modules);
   }
 
   public async getClientVersion(): Promise<Bytes32> {
-    return Buffer.from(`lodestar-${process.env.npm_package_version}`, "utf-8");
+    return Buffer.from(`Lodestar/${process.env.npm_package_version || "dev"}`, "utf-8");
   }
 
 
@@ -100,5 +105,13 @@ export class BeaconApi implements IBeaconApi {
         this.chain.off("processedBlock", push);
       };
     });
+  }
+
+  public async getHead(): Promise<HeadResponse> {
+    return this.chain.getHead();
+  }
+
+  public async getPeers(): Promise<PeerId[]> {
+    return this.network.getPeers();
   }
 }
