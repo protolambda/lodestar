@@ -143,7 +143,7 @@ export class FastSync
               fetchBlockChunks(
                 logger, chain, network.reqResp, getInitialSyncPeers, opts.blockPerChunk
               ),
-              processSyncBlocks(config, chain, logger, true)
+              processSyncBlocks(config, chain, logger, false)
             );
             logger.verbose("last fetched slot=" + lastSlot);
             if(lastSlot) {
