@@ -28,7 +28,7 @@ export function postProcess(
       for await(const {block, preStateContext, postStateContext, finalized} of source) {
         await db.processBlockOperations(block);
         if(!finalized) {
-          await attestationProcessor.receiveBlock(block);
+          // TODO await attestationProcessor.receiveBlock(block);
         }
         metrics.currentSlot.set(block.message.slot);
         eventBus.emit("processedBlock", block);
