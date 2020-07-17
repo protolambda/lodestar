@@ -4,7 +4,7 @@ import {
   BeaconState,
   Checkpoint,
   ENRForkID,
-  ForkDigest,
+  ForkDigest, HeadResponse,
   Number64,
   SignedBeaconBlock,
   Slot,
@@ -13,11 +13,13 @@ import {
 } from "@chainsafe/lodestar-types";
 import {IBeaconChain, ILMDGHOST} from "../../../../src/chain";
 import {IBeaconClock} from "../../../../src/chain/clock/interface";
+import {ZERO_HASH} from "../../../../src/constants";
 import {computeForkDigest, EpochContext} from "@chainsafe/lodestar-beacon-state-transition";
 import {IBeaconConfig} from "@chainsafe/lodestar-config";
 import {generateEmptySignedBlock} from "../../block";
 import {ITreeStateContext} from "../../../../src/db/api/beacon/stateContextCache";
 import {TreeBacked} from "@chainsafe/ssz";
+import PeerId from "peer-id";
 
 export interface IMockChainParams {
   genesisTime: Number64;
@@ -80,6 +82,17 @@ export class MockBeaconChain extends EventEmitter implements IBeaconChain {
     return this.state.finalizedCheckpoint;
   }
 
+  public async getHead(): Promise<HeadResponse> {
+    return {
+      headSlot: 0,
+      headBlockRoot: ZERO_HASH,
+      finalizedSlot: 0,
+      finalizedBlockRoot: ZERO_HASH,
+      justifiedSlot: 0,
+      justifiedBlockRoot: ZERO_HASH,
+    };
+  }
+
   public get currentForkDigest(): ForkDigest {
     return computeForkDigest(this.config, this.state.fork.currentVersion, this.state.genesisValidatorsRoot);
   }
@@ -94,6 +107,10 @@ export class MockBeaconChain extends EventEmitter implements IBeaconChain {
       nextForkEpoch: 100,
       nextForkVersion: Buffer.alloc(4),
     };
+  }
+
+  public async getPeers(): Promise<PeerId[]> {
+    return [];
   }
 
   receiveAttestation(): Promise<void> {

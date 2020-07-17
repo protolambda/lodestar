@@ -3,7 +3,8 @@
  */
 
 import {IApi} from "../../interface";
-import {BLSPubkey, ForkResponse, Number64, SignedBeaconBlock, ValidatorResponse} from "@chainsafe/lodestar-types";
+import {BLSPubkey, ForkResponse, Number64, SignedBeaconBlock,
+  ValidatorResponse, HeadResponse} from "@chainsafe/lodestar-types";
 import {LodestarEventIterator} from "../../../util/events";
 import {IBeaconBlocksApi} from "./blocks";
 
@@ -27,4 +28,10 @@ export interface IBeaconApi extends IApi {
   getGenesisTime(): Promise<Number64>;
 
   getBlockStream(): LodestarEventIterator<SignedBeaconBlock>;
+
+  /**
+   * Requests the current fork-choice head, including finalization and justification data.
+   */
+  getHead(): Promise<HeadResponse>;
+
 }

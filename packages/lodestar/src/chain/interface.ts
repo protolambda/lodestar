@@ -7,6 +7,7 @@ import {
   Checkpoint,
   ENRForkID,
   ForkDigest,
+  HeadResponse,
   Root,
   SignedBeaconBlock,
   Slot,
@@ -65,6 +66,8 @@ export interface IBeaconChain extends ChainEventEmitter {
   getHeadBlock(): Promise<SignedBeaconBlock|null>;
 
   getFinalizedCheckpoint(): Promise<Checkpoint>;
+
+  getHead(): Promise<HeadResponse>;
 
   getBlockAtSlot(slot: Slot): Promise<SignedBeaconBlock|null>;
 

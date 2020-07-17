@@ -9,7 +9,8 @@ import {
   Number64,
   SignedBeaconBlock,
   Uint64,
-  ValidatorResponse
+  ValidatorResponse,
+  HeadResponse,
 } from "@chainsafe/lodestar-types";
 import {IBeaconApi} from "./interface";
 import {IBeaconChain} from "../../../chain";
@@ -86,4 +87,9 @@ export class BeaconApi implements IBeaconApi {
       };
     });
   }
+
+  public async getHead(): Promise<HeadResponse> {
+    return this.chain.getHead();
+  }
+
 }
